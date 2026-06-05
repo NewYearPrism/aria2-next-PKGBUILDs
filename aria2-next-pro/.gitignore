@@ -1,0 +1,11 @@
+src/
+pkg/
+build/
+
+*.tar
+*.tar.*
+*.pkg.tar.*
+*.src.tar.*
+*.log
+*.log.*
+*.part

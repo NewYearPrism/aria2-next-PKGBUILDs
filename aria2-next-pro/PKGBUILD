@@ -1,0 +1,54 @@
+# Maintainer: Misora
+
+pkgname=aria2-next-pro
+_pkgname=aria2-next
+pkgver=2.4.5
+pkgrel=1
+pkgdesc='Maintained aria2 fork with extensive bug fixes and modernized architecture (with Aria2 Pro patches)'
+arch=('x86_64' 'aarch64')
+url='https://github.com/AnInsomniacy/aria2-next'
+license=('GPL-2.0-or-later')
+depends=('c-ares' 'ca-certificates' 'gcc-libs' 'glibc' 'libssh2' 'libxml2' 'openssl' 'sqlite' 'zlib')
+makedepends=('cmake' 'ninja' 'patch' 'pkgconf')
+provides=('aria2-next' 'aria2')
+conflicts=('aria2-next' 'aria2')
+source=("${_pkgname}-${pkgver}.tar.gz::https://github.com/AnInsomniacy/aria2-next/archive/refs/tags/v${pkgver}.tar.gz"
+        '0001-options-unlock-connection-per-server-limit.patch'
+        '0002-download-retry-on-slow-speed-and-conection-close.patch'
+        '0003-option-add-option-to-retry-on-http-400-403-406-or-un.patch')
+sha512sums=('41c991eb69b487bd3c7c2ae91ecb64f035f0cf52dc13138fd7ef076dc3ffd6c3e3fa1489c9cfab58e09cd5f2ab1b7c221ceb683a055328350c30318e2ce5f0c3'
+            'c6d257f2cf53e778f1f2fb5c3d2accb013b61e01b123806ea2b1ebbe0c8a085b4c4dbc43c44e1624a64ce353192adb2e5febfbe7581aa5580793cdb54b476e11'
+            '014346d373604eb1c4ed77aa4eae33089d2d15de04a633c127e62e63869c77db4f012bd1fa5d4f60b8458a7a846b0c911c3ffbfcc954666c799a778995325e40'
+            'fd0a7af20d140c6481a568c642771562b29ddfe0f49630bf1f101c3285a037bfb314a0f0a6673d4714526e10f6e9ffc799ac430eeb7da7ba185cfe706318a725')
+
+prepare() {
+  cd "${_pkgname}-${pkgver}"
+
+  local src
+  for src in "${source[@]:1}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    patch -Np1 <"../${src}"
+  done
+}
+
+build() {
+  CFLAGS+=" -ffile-prefix-map=${srcdir}=."
+  CXXFLAGS+=" -ffile-prefix-map=${srcdir}=."
+
+  cmake -S "${_pkgname}-${pkgver}" -B build -G Ninja \
+    -Wno-dev \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_SHARED_LIBS=ON \
+    -DARIA2_ENABLE_LIBARIA2=ON \
+    -DARIA2_WITH_GNUTLS=OFF \
+    -DARIA2_WITH_OPENSSL=ON
+  cmake --build build
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+
+  ln -s aria2-next "${pkgdir}/usr/bin/aria2c"
+}
